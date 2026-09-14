@@ -1,0 +1,15 @@
+---
+description: Core operating constraints, security boundaries, and local-first requirements for Work Closeout
+globs: *
+alwaysApply: true
+---
+
+# Work Closeout Constraints
+
+- **Local-Only Execution:** The project is strictly local-first with no remote, telemetry, cloud repository, or analytics. Network providers must always be rejected or set to `disabled`.
+- **Credential Protection:** Never place credentials, API keys, or secrets in `work-closeout.json`.
+- **Read-Only Discovery:** When interacting with Obsidian, read only frontmatter and titles. Refuse to create, rename, or overwrite existing vaults or project notes.
+- **Artifact Isolation:** The configured `artifactDirectory` must live entirely outside every directory listed in `allowedRoots` to prevent the closeout from collecting its own drafts and logs.
+- **Command Sanitization:** Reject shell composition, network, privilege escalation, destructive, or app-launch commands within `verificationCommands`.
+- **Non-Destructive Writes:** File writes must be atomic, session-specific, and never overwrite existing files. An explicit approval control is mandatory before writing to any Obsidian or report directory.
+- **Strict Provenance:** Deterministic drafts must remain conservative and state only what the included local sources explicitly support, without fabricating context.

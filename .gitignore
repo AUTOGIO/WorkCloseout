@@ -1,0 +1,6 @@
+.build/
+dist/
+artifacts/sessions/
+artifacts/logs/*.jsonl
+work-closeout.json
+.DS_Store

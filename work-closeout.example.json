@@ -1,0 +1,12 @@
+{
+  "artifactDirectory" : "artifacts",
+  "projects" : [
+    {
+      "allowedExtensions" : ["md", "txt", "swift", "py", "js", "ts", "json", "yaml", "yml", "toml", "sh", "zsh"],
+      "allowedRoots" : ["/ABSOLUTE/PATH/TO/AN/APPROVED/PROJECT"],
+      "displayName" : "Example project",
+      "id" : "example-project",
+      "provider" : "disabled"
+    }
+  ]
+}

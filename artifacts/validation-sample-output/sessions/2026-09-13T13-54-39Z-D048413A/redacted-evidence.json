@@ -1,0 +1,15 @@
+{
+  "createdAt" : "2026-09-13T13:54:39Z",
+  "excludedCount" : 0,
+  "items" : [
+    {
+      "excerpt" : "# Approved test evidence\n\nCompleted the local-only Work Closeout MVP scaffold. Pending review is limited to the generated dry-run draft.\n",
+      "modifiedAt" : "2026-09-12T18:59:05Z",
+      "relativePath" : "session-note.md",
+      "sha256" : "7054128ea820821bdb971ff049341aa8352a4b6026d1916ccef0742da54e5b71",
+      "sourceID" : "bundled-sample:0:session-note.md"
+    }
+  ],
+  "profileID" : "bundled-sample",
+  "sessionID" : "2026-09-13T13-54-39Z-D048413A"
+}

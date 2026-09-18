@@ -6,9 +6,11 @@ public struct RepositoryInspector: Sendable {
     private let maximumOutputCharacters = 8_000
     private let maximumChanges = 200
     /// Caps hung `make` / `swift test` / `npm test` runs during closeout preparation.
-    public static let verificationTimeoutSeconds: TimeInterval = 900
+    public var verificationTimeoutSeconds: TimeInterval
 
-    public init() {}
+    public init(verificationTimeoutSeconds: TimeInterval = 900) {
+        self.verificationTimeoutSeconds = verificationTimeoutSeconds
+    }
 
     public func inspect(profile: ProjectProfile) throws -> RepositorySnapshot? {
         guard let repositoryRoot = profile.repositoryRoot else { return nil }
@@ -26,10 +28,10 @@ public struct RepositoryInspector: Sendable {
                 executable: "/bin/zsh",
                 arguments: ["-lc", command],
                 currentDirectory: root,
-                timeout: Self.verificationTimeoutSeconds
+                timeout: verificationTimeoutSeconds
             )
             let output = result.timedOut
-                ? "verification timed out after \(Int(Self.verificationTimeoutSeconds))s\n" + result.output
+                ? "verification timed out after \(Int(verificationTimeoutSeconds))s\n" + result.output
                 : result.output
             let exitCode = result.timedOut ? Int32(124) : result.exitCode
             return VerificationResult(command: command, exitCode: exitCode, output: output)
@@ -51,37 +53,14 @@ public struct RepositoryInspector: Sendable {
         return url
     }
 
-    private func run(executable: String, arguments: [String], currentDirectory: URL, timeout: TimeInterval) throws -> (exitCode: Int32, output: String, timedOut: Bool) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        process.currentDirectoryURL = currentDirectory
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = output
-        try process.run()
-
-        let deadline = Date().addingTimeInterval(timeout)
-        while process.isRunning {
-            if Date() >= deadline {
-                process.terminate()
-                let graceDeadline = Date().addingTimeInterval(2)
-                while process.isRunning, Date() < graceDeadline {
-                    Thread.sleep(forTimeInterval: 0.05)
-                }
-                if process.isRunning {
-                    process.interrupt()
-                }
-                let data = output.fileHandleForReading.readDataToEndOfFile()
-                let text = String(decoding: data, as: UTF8.self)
-                return (124, String(text.prefix(maximumOutputCharacters)), true)
-            }
-            Thread.sleep(forTimeInterval: 0.05)
-        }
-
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        let text = String(decoding: data, as: UTF8.self)
-        return (process.terminationStatus, String(text.prefix(maximumOutputCharacters)), false)
+    private func run(executable: String, arguments: [String], currentDirectory: URL, timeout: TimeInterval) throws -> BoundedProcess.Outcome {
+        try BoundedProcess.run(
+            executable: executable,
+            arguments: arguments,
+            currentDirectory: currentDirectory,
+            timeout: timeout,
+            maximumOutputCharacters: maximumOutputCharacters
+        )
     }
 
     private func nonEmpty(_ value: String) -> String? {

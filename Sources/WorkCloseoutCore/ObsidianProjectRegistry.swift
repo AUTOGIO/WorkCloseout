@@ -1,6 +1,6 @@
 import Foundation
 
-/// A discovered, existing project note. Only the frontmatter and first heading are read.
+/// A discovered, existing project note. Only a bounded prefix is read for frontmatter and the first heading.
 public struct ObsidianProjectNote: Identifiable, Sendable {
     public var id: String { fileURL.path }
     public var fileURL: URL
@@ -10,12 +10,15 @@ public struct ObsidianProjectNote: Identifiable, Sendable {
 }
 
 public enum ObsidianProjectRegistry {
+    /// Maximum bytes read from the start of each note while discovering registry metadata.
+    public static let maximumMetadataBytes = 64_000
+
     public static func discover(in projectsDirectory: URL) throws -> [ObsidianProjectNote] {
         let root = try existingDirectory(projectsDirectory)
         let urls = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
         return try urls.compactMap { url in
             guard url.pathExtension.lowercased() == "md", !url.lastPathComponent.contains(".bak"), !url.lastPathComponent.contains(".work-closeout-") else { return nil }
-            let text = try String(contentsOf: url, encoding: .utf8)
+            let text = try readMetadataPrefix(from: url)
             let properties = frontmatter(in: text)
             guard properties["type"]?.lowercased() == "project" else { return nil }
             let title = heading(in: text) ?? url.deletingPathExtension().lastPathComponent
@@ -32,6 +35,13 @@ public enum ObsidianProjectRegistry {
             throw CloseoutError.invalidConfiguration("Obsidian project note is missing or is not marked type: project: \(fileName)")
         }
         return note
+    }
+
+    private static func readMetadataPrefix(from url: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let data = handle.readData(ofLength: maximumMetadataBytes)
+        return String(decoding: data, as: UTF8.self)
     }
 
     private static func existingDirectory(_ url: URL) throws -> URL {

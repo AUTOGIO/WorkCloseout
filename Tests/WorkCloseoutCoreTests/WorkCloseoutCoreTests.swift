@@ -121,4 +121,50 @@ final class WorkCloseoutCoreTests: XCTestCase {
         XCTAssertTrue(applied.session.writesApproved)
         XCTAssertThrowsError(try service.apply(session: applied.session, profile: profile, artifactDirectory: artifacts, approval: true))
     }
+    func testBoundedProcessTimeoutTerminatesDescendantsWithoutHanging() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("WorkCloseoutTimeout-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let marker = root.appendingPathComponent("child-alive.txt")
+        try Data("seed".utf8).write(to: marker)
+        let script = """
+        import os, time, pathlib
+        marker = pathlib.Path('child-alive.txt')
+        child = os.fork()
+        if child == 0:
+            while True:
+                marker.write_text('alive:' + str(time.time()), encoding='utf-8')
+                time.sleep(0.15)
+        time.sleep(60)
+        """
+        let started = Date()
+        let outcome = try BoundedProcess.run(
+            executable: "/usr/bin/python3",
+            arguments: ["-c", script],
+            currentDirectory: root,
+            timeout: 1.0,
+            maximumOutputCharacters: 2_000
+        )
+        XCTAssertTrue(outcome.timedOut)
+        XCTAssertEqual(outcome.exitCode, 124)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 5.0)
+        Thread.sleep(forTimeInterval: 0.5)
+        let first = try String(contentsOf: marker, encoding: .utf8)
+        XCTAssertTrue(first.hasPrefix("alive:"), "expected child heartbeat, marker=\(first)")
+        Thread.sleep(forTimeInterval: 0.7)
+        let second = try String(contentsOf: marker, encoding: .utf8)
+        XCTAssertEqual(first, second)
+    }
+    func testObsidianProjectRegistryReadsOnlyBoundedPrefix() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("WorkCloseoutBoundedNote-\(UUID().uuidString)")
+        let projects = root.appendingPathComponent("Projects")
+        try FileManager.default.createDirectory(at: projects, withIntermediateDirectories: true)
+        let note = projects.appendingPathComponent("Large.md")
+        var contents = "---\ntype: project\nstatus: active\n---\n\n# Large Project\n\n"
+        contents += String(repeating: "BODY_PAYLOAD_SHOULD_REMAIN_UNREAD_BY_REGISTRY\n", count: 8_000)
+        XCTAssertGreaterThan(contents.utf8.count, ObsidianProjectRegistry.maximumMetadataBytes)
+        try Data(contents.utf8).write(to: note)
+        let notes = try ObsidianProjectRegistry.discover(in: projects)
+        XCTAssertEqual(notes.map(\.fileName), ["Large.md"])
+        XCTAssertEqual(notes[0].title, "Large Project")
+    }
 }

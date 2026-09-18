@@ -35,7 +35,7 @@ Before using the CLI, copy the example to the ignored local file `work-closeout.
 
 `artifactDirectory` must live outside every `allowedRoots` directory. This prevents a future closeout from collecting its own drafts and logs.
 
-To include real repository context, configure an existing local Git repository and a supported verification command: `make check`, `make check-categories`, `make test`, `make lint`, `make verify`, `swift test`, Python unittest, `pytest`, or `npm test`. The app rejects shell composition, network clients named in the command string, privilege, destructive, and app-launch commands. Approved forms still run the target repository’s own scripts (for example a `Makefile` recipe or `npm test`), which are trusted project code and may perform network I/O — choose verification commands deliberately. Verification runs are capped at 15 minutes; a timeout is recorded as a failed check. A failed verification is recorded as a blocker; it never records the command's raw output in the project note.
+To include real repository context, configure an existing local Git repository and a supported verification command: `make check`, `make check-categories`, `make test`, `make lint`, `make verify`, `swift test`, Python unittest, `pytest`, or `npm test`. The app rejects shell composition, network clients named in the command string, privilege, destructive, and app-launch commands. Approved forms still run the target repository’s own scripts (for example a `Makefile` recipe or `npm test`), which are trusted project code and may perform network I/O — choose verification commands deliberately. Verification runs are capped at 15 minutes; on timeout the process group is terminated and preparation continues with a failed check. A failed verification is recorded as a blocker; it never records the command's raw output in the project note.
 
 ```json
 "repositoryRoot": "/absolute/path/to/your/repository",
@@ -68,7 +68,7 @@ Obsidian is deliberately deferred. After you identify a vault, add an `obsidian`
 "reportDirectory": "/absolute/path/to/an/existing/project/reports"
 ```
 
-For an existing project-note directory, wire it once at the top of the configuration and reference a direct filename from each approved profile. The app reads only frontmatter and the title while discovering notes; it never creates, renames, or overwrites them. When both are present, a profile's repository path must match that note's `repository:` property.
+For an existing project-note directory, wire it once at the top of the configuration and reference a direct filename from each approved profile. The app reads at most 64 KB from the start of each note (YAML frontmatter and the first heading) while discovering the registry; it never creates, renames, or overwrites notes. When both are present, a profile's repository path must match that note's `repository:` property.
 
 ```json
 "obsidianProjectsDirectory": "/absolute/path/to/your/vault/Projects",

@@ -1,6 +1,6 @@
 # Work Closeout
 
-Work Closeout is a private, local-first macOS closeout assistant. One button creates a reviewable evidence bundle and a deterministic closeout draft. It is a standalone local Git project with no remote, telemetry, cloud repository, or analytics.
+Work Closeout is a private, local-first macOS closeout assistant. One button creates a reviewable evidence bundle and a deterministic closeout draft. Closeout content never leaves the Mac: there is no telemetry, analytics, or cloud AI provider. A private Git remote may exist for source backup only — never commit live `work-closeout.json`, credentials, or evidence sessions.
 
 ## Production-ready local workflow
 
@@ -17,7 +17,8 @@ Work Closeout is a private, local-first macOS closeout assistant. One button cre
 ## Launch your configured closeout
 
 ```bash
-cd /Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout
+cd /path/to/WorkCloseout
+export WORK_CLOSEOUT_CONFIG="/absolute/path/to/work-closeout.json"
 ./script/build_and_run.sh
 ```
 
@@ -26,15 +27,15 @@ The launcher requires `WORK_CLOSEOUT_CONFIG` and packages that explicit local pr
 To run the same flow without the window:
 
 ```bash
-cd /Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout
-swift run work-closeout prepare --config /Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/work-closeout.json --project my-approved-project
+cd /path/to/WorkCloseout
+swift run work-closeout prepare --config /absolute/path/to/work-closeout.json --project my-approved-project
 ```
 
 Before using the CLI, copy the example to the ignored local file `work-closeout.json`, replace the placeholder with an absolute approved project path, and set the project identifier to `my-approved-project` (or adjust the command). The GUI accepts `WORK_CLOSEOUT_CONFIG` with that absolute path; when a configuration has multiple projects, the review window shows a project picker.
 
 `artifactDirectory` must live outside every `allowedRoots` directory. This prevents a future closeout from collecting its own drafts and logs.
 
-To include real repository context, configure an existing local Git repository and a supported verification command: `make check`, `make check-categories`, `make test`, `make lint`, `make verify`, `swift test`, Python unittest, `pytest`, or `npm test`. The app rejects shell composition, network, privilege, destructive, and app-launch commands. A failed verification is recorded as a blocker; it never records the command's raw output in the project note.
+To include real repository context, configure an existing local Git repository and a supported verification command: `make check`, `make check-categories`, `make test`, `make lint`, `make verify`, `swift test`, Python unittest, `pytest`, or `npm test`. The app rejects shell composition, network clients named in the command string, privilege, destructive, and app-launch commands. Approved forms still run the target repository’s own scripts (for example a `Makefile` recipe or `npm test`), which are trusted project code and may perform network I/O — choose verification commands deliberately. Verification runs are capped at 15 minutes; a timeout is recorded as a failed check. A failed verification is recorded as a blocker; it never records the command's raw output in the project note.
 
 ```json
 "repositoryRoot": "/absolute/path/to/your/repository",
@@ -44,14 +45,13 @@ To include real repository context, configure an existing local Git repository a
 ## Apple Shortcut, one-click trigger
 
 Create a Shortcut named **Work Closeout** with **Run Shell Script** set to
-**zsh**, then paste this body. It packages the local `work-closeout.json`
-profile into the app before launch. Both paths are absolute because Shortcuts runs
-shell actions from a temporary WorkflowKit directory, not from this project:
+**zsh**, then paste this body. Replace both paths with absolute paths on your Mac.
+Shortcuts runs shell actions from a temporary WorkflowKit directory, not from this project:
 
 ```zsh
-export WORK_CLOSEOUT_CONFIG="/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/work-closeout.json"
-cd -- "/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout" || exit 1
-exec /bin/bash "/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/script/build_and_run.sh"
+export WORK_CLOSEOUT_CONFIG="/absolute/path/to/work-closeout.json"
+cd -- "/absolute/path/to/WorkCloseout" || exit 1
+exec /bin/bash "/absolute/path/to/WorkCloseout/script/build_and_run.sh"
 ```
 
 It opens the local review window; review remains mandatory. Do not configure Shortcuts to pass project content or API keys.
@@ -83,12 +83,17 @@ The core defines provider names only for forward-compatible configuration, but s
 
 This is a content-selection tool, not a secret scanner or data-loss-prevention product. It does not inspect browser history, system logs, application state, source-control history, raw financial files, or unapproved paths. Allowlisted text can still contain information that a simple pattern redactor does not recognize—review the exact preview before any future cloud transmission. Symlink resolution and root containment are enforced, but an allowlist owner remains responsible for selecting appropriate roots. The local deterministic draft is intentionally conservative and only says what its included sources support.
 
+The `script/build_and_run.sh` launcher builds an ad-hoc, unsigned `.app` for private local use. There is no App Sandbox or notarization in this repository; Gatekeeper prompts on other Macs are expected unless you sign the bundle yourself.
+
+The optional `scripts/update_work_closeout_config.py` helper only rewrites `work-closeout.json`. It never creates Obsidian notes and omits finance-sensitive roots such as `data/` from generated allowlists.
+
 ## Verify
 
 ```bash
-cd /Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout
+cd /path/to/WorkCloseout
 swift test
+export WORK_CLOSEOUT_CONFIG="/absolute/path/to/work-closeout.json"
 ./script/build_and_run.sh --verify
 ```
 
-Tests cover scope containment/no writes into an input root, artifact-root separation, financial-file exclusion, redaction, draft provenance validation, disabled-provider enforcement, backup-backed approved writes, and write approval enforcement. The launch check verifies the process; visual interaction still requires a manual review of the native window.
+Tests cover scope containment/no writes into an input root, artifact-root separation, financial-file exclusion, redaction, draft provenance validation, disabled-provider enforcement, backup-backed approved writes, idempotent session appends, and write approval enforcement. The launch check verifies the process; visual interaction still requires a manual review of the native window.

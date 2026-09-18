@@ -27,6 +27,7 @@ public struct TemplateDraftingProvider: Sendable {
             else { pending.append(contentsOf: repository.changes.map { "Uncommitted change: \($0)" }) }
             for result in repository.verificationResults {
                 if result.exitCode == 0 { accomplishments.append("Verification passed: \(result.command)") }
+                else if result.exitCode == 124 { blockers.append("Verification timed out: \(result.command). Inspect the local evidence bundle for its output.") }
                 else { blockers.append("Verification failed (exit \(result.exitCode)): \(result.command). Inspect the local evidence bundle for its output.") }
             }
         }

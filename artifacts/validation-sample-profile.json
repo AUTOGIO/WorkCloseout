@@ -1,9 +1,9 @@
 {
-  "artifactDirectory" : "/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/artifacts/validation-sample-output",
+  "artifactDirectory" : "artifacts/validation-sample-output",
   "projects" : [
     {
       "allowedExtensions" : ["md", "txt", "swift", "py", "js", "ts"],
-      "allowedRoots" : ["/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/Examples/ApprovedNotes"],
+      "allowedRoots" : ["Examples/ApprovedNotes"],
       "displayName" : "Bundled sample only",
       "id" : "bundled-sample",
       "provider" : "disabled"

@@ -23,8 +23,21 @@ public struct CloseoutService: Sendable {
         guard profile.obsidian != nil || profile.reportDirectory != nil else { throw CloseoutError.writeTargetsNotConfigured }
         var destinations: [URL] = []
         let text = markdown(session)
-        if let obsidian = profile.obsidian { let url = try configuredFile(note: obsidian.existingNote, constrainedTo: obsidian.vaultRoot); try append(text, to: url); destinations.append(url) }
-        if let reportRoot = profile.reportDirectory { let root = try existingDirectory(reportRoot); let url = root.appendingPathComponent("closeout-\(session.id).md"); try text.data(using: .utf8)!.write(to: url, options: .withoutOverwriting); destinations.append(url) }
+        if let obsidian = profile.obsidian {
+            let url = try configuredFile(note: obsidian.existingNote, constrainedTo: obsidian.vaultRoot)
+            try append(text, to: url, sessionID: session.id)
+            destinations.append(url)
+        }
+        if let reportRoot = profile.reportDirectory {
+            let root = try existingDirectory(reportRoot)
+            let url = root.appendingPathComponent("closeout-\(session.id).md")
+            if FileManager.default.fileExists(atPath: url.path) {
+                destinations.append(url)
+            } else {
+                try text.data(using: .utf8)!.write(to: url, options: .withoutOverwriting)
+                destinations.append(url)
+            }
+        }
         return destinations
     }
     public func apply(session: CloseoutSession, profile: ProjectProfile, artifactDirectory: URL, approval: Bool) throws -> (session: CloseoutSession, destinations: [URL]) {
@@ -60,12 +73,15 @@ public struct CloseoutService: Sendable {
     }
     private func configuredFile(note: String, constrainedTo root: String) throws -> URL { let rootURL = try existingDirectory(root); let url = URL(fileURLWithPath: note).standardizedFileURL.resolvingSymlinksInPath(); guard url.path.hasPrefix(rootURL.path + "/"), FileManager.default.fileExists(atPath: url.path) else { throw CloseoutError.unsafePath("Obsidian note must already exist inside the configured vault") }; return url }
     private func existingDirectory(_ path: String) throws -> URL { let url = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath(); var directory: ObjCBool = false; guard FileManager.default.fileExists(atPath: url.path, isDirectory: &directory), directory.boolValue else { throw CloseoutError.unsafePath("Configured directory does not exist: \(path)") }; return url }
-    private func append(_ text: String, to url: URL) throws {
+    /// Appends once per session id. If the note already contains the session marker, skip rewriting
+    /// so a crash between append and `writesApproved` cannot duplicate content on retry.
+    private func append(_ text: String, to url: URL, sessionID: String) throws {
+        let originalText = String(decoding: try Data(contentsOf: url), as: UTF8.self)
+        if originalText.contains(sessionMarker(sessionID)) { return }
         let backup = url.appendingPathExtension("work-closeout-\(UUID().uuidString).bak")
         try FileManager.default.copyItem(at: url, to: backup)
-        let original = try Data(contentsOf: url)
         let addition = Data("\n\n\(text)".utf8)
-        try (original + addition).write(to: url, options: .atomic)
+        try (Data(originalText.utf8) + addition).write(to: url, options: .atomic)
     }
     private func validateArtifactRoot(_ artifactRoot: URL, for profile: ProjectProfile) throws {
         for rootText in profile.allowedRoots {
@@ -74,5 +90,9 @@ public struct CloseoutService: Sendable {
             if artifactRoot.path == sourceRoot.path || artifactRoot.path.hasPrefix(prefix) { throw CloseoutError.unsafePath("artifactDirectory must not be inside an allowed source root") }
         }
     }
-    public func markdown(_ session: CloseoutSession) -> String { "# \(session.draft.title)\n\n\(session.draft.summary)\n\n## Accomplishments\n\(session.draft.accomplishments.map { "- \($0)" }.joined(separator: "\n"))\n\n## Pending\n\(session.draft.pending.map { "- \($0)" }.joined(separator: "\n"))\n\n## Blockers\n\(session.draft.blockers.isEmpty ? "- None." : session.draft.blockers.map { "- \($0)" }.joined(separator: "\n"))\n\n## Next steps\n\(session.draft.nextSteps.map { "- \($0)" }.joined(separator: "\n"))\n\n## Evidence\n\(session.draft.sourceIDs.map { "- \($0)" }.joined(separator: "\n"))\n" }
+    public func markdown(_ session: CloseoutSession) -> String {
+        "# \(session.draft.title)\n\n<!-- work-closeout-session: \(session.id) -->\n\n\(session.draft.summary)\n\n## Accomplishments\n\(session.draft.accomplishments.map { "- \($0)" }.joined(separator: "\n"))\n\n## Pending\n\(session.draft.pending.map { "- \($0)" }.joined(separator: "\n"))\n\n## Blockers\n\(session.draft.blockers.isEmpty ? "- None." : session.draft.blockers.map { "- \($0)" }.joined(separator: "\n"))\n\n## Next steps\n\(session.draft.nextSteps.map { "- \($0)" }.joined(separator: "\n"))\n\n## Evidence\n\(session.draft.sourceIDs.map { "- \($0)" }.joined(separator: "\n"))\n"
+    }
+
+    private func sessionMarker(_ sessionID: String) -> String { "<!-- work-closeout-session: \(sessionID) -->" }
 }

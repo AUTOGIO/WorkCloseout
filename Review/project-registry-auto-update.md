@@ -28,21 +28,17 @@ Criado: `~/Documents/GitHub/WorkCloseout/scripts/update_work_closeout_config.py`
 
 ### O que ele faz
 1. Lê `work-closeout.json` existente para preservar `artifactDirectory` e `obsidianProjectsDirectory`.
-2. Varre os diretórios raiz configurados (`SCAN_ROOTS`):
+2. Varre os diretórios raiz configurados (`SCAN_ROOTS` sob `$HOME`):
    - `~/Automation`
    - `~/Documents/GitHub`
 3. Encontra subdiretórios que são repositórios Git.
 4. Processa projetos extras (`EXTRA_PROJECTS`) que não precisam ser Git — no caso, `~/Automation/spencer`.
 5. Para cada projeto detectado:
    - Define `id`, `displayName`, `repositoryRoot`.
-   - Descobre `allowedRoots` a partir de pastas como `scripts/`, `Sources/`, `src/`, `tests/`, `Tests/`, `docs/`, `nfce/`, `data/`, `config/`.
+   - Descobre `allowedRoots` a partir de pastas como `scripts/`, `Sources/`, `src/`, `tests/`, `Tests/`, `docs/`, `config/` (**não** inclui `data/` nem `nfce/`).
    - Define `allowedExtensions` padrão.
-   - Determina `verificationCommands` por heurística:
-     - Swift → `swift test` ou `./scripts/test.sh`
-     - Makefile → `make check`, `make check-categories`, `make test`, `make lint`, `make verify`
-     - Python tests → `/usr/bin/python3 -m unittest discover -s tests -v`
-     - Scan script → `python3 scripts/scan_workspace.py`
-   - Cria a nota do Obsidian se ela não existir.
+   - Determina `verificationCommands` apenas em formas aceitas pelo core (`swift test`, `make check` / `check-categories` / `test` / `lint` / `verify`, `python3 -m unittest …`, `pytest`, `npm test`).
+   - Associa `obsidianProjectNote` **somente** se a nota já existir com `type: project`. O script **nunca** cria, renomeia ou sobrescreve notas do Obsidian.
 6. Escreve `work-closeout.json` de forma atômica via `tempfile` + `replace`.
 
 ### Como usar
@@ -55,9 +51,9 @@ Após rodar, basta reabrir o app WorkCloseout (ou recarregar a config) para ver 
 
 ---
 
-## 3. Nota do Obsidian Criada
+## 3. Notas do Obsidian
 
-`~/Documents/Obsidian/Projects/ProjectPulse.md` foi criada automaticamente porque não existia. As demais 9 notas já estavam presentes.
+Histórico (2026-09-13): uma execução anterior chegou a criar `~/Documents/Obsidian/Projects/ProjectPulse.md`. Esse comportamento foi removido — o updater atual apenas referencia notas existentes e registra `[skip-note]` quando faltam.
 
 ---
 
@@ -66,10 +62,10 @@ Após rodar, basta reabrir o app WorkCloseout (ou recarregar a config) para ver 
 | Verificação | Resultado |
 |---|---|
 | `python3 -m json.tool work-closeout.json` | ✅ Válido |
-| BEATS: `/usr/bin/python3 -m unittest discover -s tests -v` | ✅ 13 tests OK |
+| BEATS: `python3 -m unittest discover -s tests -v` | ✅ 13 tests OK |
 | edu_price_analysis: `make check-categories` | ✅ `Current` |
 | Personal_Finance: `make check` | ✅ `integrity check passed` |
-| ProjectPulse: `python3 scripts/scan_workspace.py` | ✅ exit 0 |
+| ProjectPulse: (após alinhamento) usar apenas comandos do allowlist do core | ver seção 5 |
 
 ---
 

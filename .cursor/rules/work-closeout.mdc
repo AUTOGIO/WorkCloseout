@@ -6,7 +6,7 @@ alwaysApply: true
 
 # Work Closeout Constraints
 
-- **Local-Only Execution:** The project is strictly local-first with no remote, telemetry, cloud repository, or analytics. Network providers must always be rejected or set to `disabled`.
+- **Local-Only Execution:** Closeout content must stay on this Mac. Reject network AI providers (`provider` must be `disabled`). Do not add telemetry, analytics, or cloud closeout adapters. A private Git remote for source backup is allowed; never push secrets, live `work-closeout.json`, or evidence sessions.
 - **Credential Protection:** Never place credentials, API keys, or secrets in `work-closeout.json`.
 - **Read-Only Discovery:** When interacting with Obsidian, read only frontmatter and titles. Refuse to create, rename, or overwrite existing vaults or project notes.
 - **Artifact Isolation:** The configured `artifactDirectory` must live entirely outside every directory listed in `allowedRoots` to prevent the closeout from collecting its own drafts and logs.

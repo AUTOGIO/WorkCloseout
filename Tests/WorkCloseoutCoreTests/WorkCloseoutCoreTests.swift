@@ -44,21 +44,42 @@ final class WorkCloseoutCoreTests: XCTestCase {
         let session = try CloseoutService().prepareCloseout(profile: profile, artifactDirectory: artifacts, now: Date(timeIntervalSince1970: 1))
         let destinations = try CloseoutService().writeApprovedTargets(session: session, profile: profile, approval: true)
         XCTAssertEqual(destinations, [note])
-        XCTAssertTrue(String(data: try Data(contentsOf: note), encoding: .utf8)!.contains("Closeout"))
+        let recorded = String(data: try Data(contentsOf: note), encoding: .utf8)!
+        XCTAssertTrue(recorded.contains("Closeout"))
+        XCTAssertTrue(recorded.contains("<!-- work-closeout-session: \(session.id) -->"))
         let names = try FileManager.default.contentsOfDirectory(atPath: vault.path)
         XCTAssertTrue(names.contains { $0.hasPrefix("Project.md.work-closeout-") && $0.hasSuffix(".bak") })
+    }
+    func testObsidianAppendIsIdempotentForTheSameSession() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("WorkCloseoutIdempotent-\(UUID().uuidString)")
+        let source = root.appendingPathComponent("source"); let vault = root.appendingPathComponent("vault"); let artifacts = root.appendingPathComponent("artifacts")
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: vault, withIntermediateDirectories: true)
+        try Data("completed work".utf8).write(to: source.appendingPathComponent("progress.md"))
+        let note = vault.appendingPathComponent("Project.md"); try Data("# Project\n".utf8).write(to: note)
+        let profile = ProjectProfile(id: "test", displayName: "Test", allowedRoots: [source.path], obsidian: ObsidianTarget(vaultRoot: vault.path, existingNote: note.path))
+        let service = CloseoutService()
+        let session = try service.prepareCloseout(profile: profile, artifactDirectory: artifacts, now: Date(timeIntervalSince1970: 3))
+        _ = try service.writeApprovedTargets(session: session, profile: profile, approval: true)
+        _ = try service.writeApprovedTargets(session: session, profile: profile, approval: true)
+        let recorded = String(data: try Data(contentsOf: note), encoding: .utf8)!
+        XCTAssertEqual(recorded.components(separatedBy: "<!-- work-closeout-session: \(session.id) -->").count - 1, 1)
     }
     func testNetworkProviderConfigurationIsRejected() throws {
         let configuration = AppConfiguration(projects: [ProjectProfile(id: "test", displayName: "Test", allowedRoots: ["/tmp"], provider: .openAI)])
         XCTAssertThrowsError(try ConfigurationStore.validate(configuration))
     }
     func testRepositoryContextAndVerificationFailuresAppearInDraftWithoutOutput() throws {
-        let repository = RepositorySnapshot(branch: "main", latestCommit: "abc123 Complete closeout", changes: [" M Sources/App.swift"], verificationResults: [VerificationResult(command: "make check", exitCode: 1, output: "private failure detail")])
+        let repository = RepositorySnapshot(branch: "main", latestCommit: "abc123 Complete closeout", changes: [" M Sources/App.swift"], verificationResults: [
+            VerificationResult(command: "make check", exitCode: 1, output: "private failure detail"),
+            VerificationResult(command: "swift test", exitCode: 124, output: "verification timed out after 900s")
+        ])
         let bundle = EvidenceBundle(sessionID: "s", profileID: "p", createdAt: .now, items: [], excludedCount: 0, repository: repository)
         let draft = TemplateDraftingProvider().draft(bundle: bundle)
         XCTAssertTrue(draft.accomplishments.contains("Repository branch at preparation: main"))
         XCTAssertTrue(draft.pending.contains("Uncommitted change:  M Sources/App.swift"))
         XCTAssertTrue(draft.blockers.contains { $0.contains("Verification failed") })
+        XCTAssertTrue(draft.blockers.contains { $0.contains("Verification timed out") })
         XCTAssertFalse(draft.summary.contains("private failure detail"))
     }
     func testLocalVerificationRejectsNetworkCommands() throws {

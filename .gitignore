@@ -4,3 +4,4 @@ artifacts/sessions/
 artifacts/logs/*.jsonl
 work-closeout.json
 .DS_Store
+artifacts/validation-sample-output/

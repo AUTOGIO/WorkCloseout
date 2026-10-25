@@ -142,4 +142,4 @@ Ambos os commits (`99f52af` e `7502a7f`) foram enviados para `origin/main`.
 
 ---
 
-*Documento criado em: `/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/Review/edu_price_analysis-dirty-state-plan.md`*
+*Documento criado em: `~/Documents/GitHub/WorkCloseout/Review/edu_price_analysis-dirty-state-plan.md`*

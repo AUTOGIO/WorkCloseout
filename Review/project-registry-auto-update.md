@@ -103,4 +103,4 @@ Correções aplicadas:
 
 ---
 
-*Documento criado em: `/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/Review/project-registry-auto-update.md`*
+*Documento criado em: `~/Documents/GitHub/WorkCloseout/Review/project-registry-auto-update.md`*

@@ -69,4 +69,4 @@ O fluxo de aprovação do Obsidian está maduro o suficiente para uso em produç
 
 ---
 
-*Documento criado em: `/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/Review/obsidian-approval-flow-validation.md`*
+*Documento criado em: `~/Documents/GitHub/WorkCloseout/Review/obsidian-approval-flow-validation.md`*

@@ -47,15 +47,15 @@
 
 ### 3.1 Configuração
 ```json
-"artifactDirectory": "/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/artifacts"
+"artifactDirectory": "~/Documents/GitHub/WorkCloseout/artifacts"
 ```
 
 ### 3.2 `allowedRoots` configuradas
 - `personal-finance`:
-  - `/Users/giovannini.eduardogmail.com/Documents/GitHub/Personal_Finance/scripts`
-  - `/Users/giovannini.eduardogmail.com/Documents/GitHub/Personal_Finance/nfce`
+  - `~/Documents/GitHub/Personal_Finance/scripts`
+  - `~/Documents/GitHub/Personal_Finance/nfce`
 - `edu-price-analysis`:
-  - `/Users/giovannini.eduardogmail.com/Documents/GitHub/edu_price_analysis/scripts`
+  - `~/Documents/GitHub/edu_price_analysis/scripts`
 
 ### 3.3 Verificação de conteúdo
 | Caminho | Tipo | Dentro de alguma `allowedRoot`? |
@@ -119,7 +119,7 @@ Current
 - `scripts/check_integrity.py` é estritamente leitura.
 
 ### 5.3 Proteção do Obsidian
-- `obsidianProjectsDirectory` configurado como `/Users/giovannini.eduardogmail.com/Documents/Obsidian/Projects`.
+- `obsidianProjectsDirectory` configurado como `~/Documents/Obsidian/Projects`.
 - Nenhuma operação de escrita, renomeação ou criação de vault foi realizada nesta revisão.
 
 **Conclusão:** Escrita aderente ao princípio não destrutivo e com controle de aprovação explícita.
@@ -171,7 +171,7 @@ Current
 
 ---
 
-*Relatório gerado em: `/Users/giovannini.eduardogmail.com/Documents/GitHub/WorkCloseout/Review/MVP_Final_Review.md`*  
+*Relatório gerado em: `~/Documents/GitHub/WorkCloseout/Review/MVP_Final_Review.md`*  
 *Nenhuma chamada externa foi realizada.*
 
 ---
